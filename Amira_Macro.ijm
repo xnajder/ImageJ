@@ -1,16 +1,14 @@
 dire = getDirectory("Choose a Directory for your .am file?");
 liste = getFileList(dire);
 
-print(liste[0]);
-
 for (i = 0; i <= liste.length - 1; i++) {
-	setBatchMode(true);
+	// setBatchMode(true);
 	open(dire + liste[i]);
 	files = getTitle();
 	endCheck = endsWith(files, ".am");
 	
 	if (endCheck == true) {
-		 print(dire);
+		 // print(dire);
 		 trackTheCells(); 
 	}
 	else {
@@ -33,105 +31,270 @@ function trackTheCells() {
 	pix_size = Dialog.getNumber();
 	Dialog.addNumber("What is the interval in seconds?", 5);
 	interval = Dialog.getNumber();
-	
 	Dialog.show();
 	// camera = Dialog.getRadioButton();
-	
 	dim = nSlices;
-	print(pix_size);
-	print(interval);
-	print(dim);
-
-	Dialog.create("To sum up");
-	Dialog.addMessage("You have "+ dim + " frames");
-	Dialog.show();
-
-	
+	// print(pix_size);
+	// print(interval);
+	// print(dim);
 	run("Properties...", "channels=1 slices="+ dim 	+ " frames=1 unit=micron pixel_width=" + pix_size + " pixel_height=" + pix_size + " voxel_depth=" + interval + "");
-	
 	// getSelectionCoordinates(xpoints, ypoints)
-	run("16-bit");
-	setThreshold(1, 65535);
+	run("Grays");
+	run("8-bit");
+	setThreshold(1, 255);
+	
 	run("Create Selection");
 	roiManager("Add");
 	roiManager("Split");
 	roiManager("Select", 0);
-	roiManager("Delete");
+	// roiManager("Delete");
 	nCells_1 = roiManager("count");
-	print("You tracked: "+ nCells_1 + " cells");
+	nCells_1 = nCells_1 - 1;
+	// print("You tracked: "+ nCells_1 - 1 + " cells");
+	Dialog.create("To sum up");
+	Dialog.addMessage("Pixel size is " + pix_size + "\nThere are "+ dim + " frames");
+	Dialog.addMessage("You tracked: "+ nCells_1+ " cells");
+	// print(pix_size);
+	// print(interval);
+	// print(dim);
+	Dialog.show();
 	
-	track();
+	roiManager("reset");
+	run("Create Selection");
+	roiManager("Add");
+
+	arr_1 = newArray();
+	arr_2 = newArray(); 
+	
+	for (i = 0; i < nSlices; i++){
+		// track();
+	}
 }
 
-
+trackTheCells();
 
 
 function track() {
-	for (i = 0; i < nSlices; i++) {
-		
-		if (nCells_1 == roiManager("count")) {
-
-			for (t = 0; t <= nCells_1 - 1; t++) {
-			roiManager("Select", t);
-			// print(i);
-			getStatistics(area, mean, min, max, std, histogram);
-			getSelectionBounds(x, y, width, height);
-
-			
-			
-			x = x * pix_size;
-			y = y * (-1) * pix_size;
-			area = area * pix_size * pix_size;
-		
-			print(x + " " + y + " " + area + mean + "");
-			
-			run("Next Slice [>]");
-			
-		
+	getDimensions(width, height, channels, slices, frames);
+	if (width >= height) {
+		w = width;
+		h = height;
 	}
-		}
-
 	else {
-		fin_areas = newArray();
-		less_dots = roiManager("count");
-		for (ncel = 0; ncel <= less_dots - 1; ncel++) {
-			lack = nCells_1 - less_dots;
-			getStatistics(area, mean, min, max, std, histogram);
-			getSelectionBounds(x, y, width, height);
-			x = x * pix_size;
-			y = y * (-1) * pix_size;
-			area = area * pix_size * pix_size;
-			fin_areas = Array.concat(fin_areas, area);
+		w = height;
+		h = width;
+	}
+
+print(height);
 	
-		}
-
-		Array.sort(fin_areas);
-		print(fin_areas[0] + "-------------------------------------");
-		roiManager("Select", 0);
-		a = Roi.getName();
-		print(a);
-		print(roiManager("count"));
-		run("Next Slice [>]");
+	for (vertical  = 0; vertical <= h; vertical++) {
+		for (horizontal = 0; horizontal <= w; horizontal++) {
+			if ( Roi.contains(horizontal, vertical)) {
+			makeRectangle(horizontal, vertical, 1, 1);
+			getStatistics(area, mean, min, max, std, histogram);
+			Roi.getBounds(x, y, width_Pix, height_Pix);
+			x_1 = x * pix_size;
+			y_1 = y * pix_size;
+			setResult("Mean", nResults, mean);
+			setResult("x_coo", nResults - 1, x_1);
+			setResult("y_coo", nResults - 1, y_1);
+			run("Create Selection");
 			}
+		}
+	}
 
-			
-		roiManager("reset");
-		run("Create Selection");
-		roiManager("Add");
-		roiManager("Split");
-		roiManager("Select", 0);
-		roiManager("Delete"); 
+// ------------------- 
 
-		
-		
-			
-	} 
+meanValues = newArray(nResults);
+x_values = newArray(nResults);
+y_values = newArray(nResults);
+
+for(i = 0; i < nResults; i++) {
+	meanValues[i] = getResult("Mean", i);
+	x_values[i] = getResult("x_coo", i);
+	y_values[i] = getResult("y_coo", i);
 }
 
-getI
+// ---- cell -----
+
+count_1 = 0;
+sum_1_x = 0;
+
+for (j = 0; j < nResults - 1; j++) {
+	if (meanValues[j] == 1) {
+		// print(meanValues[j] + " " + print(sum_1); + " " + y_values[j]);
+		sum_1_x = sum_1_x + x_values[j];
+		sum_1_y = sum_1_y + y_values[j];
+		count_1++;
+	}
+}
+
+
+//print(sum_1_x);
+
+//print(count_1);
+average_x = sum_1_x/count_1;
+average_y = sum_1_y/count_1;
+area_1 = count_1 * pix_size * pix_size; 
+
+arr_1 = Array.concat(arr_1, mean, average_x, average_y, area_1);
+
+Array.print(arr_1);
+
+close("Results");
+run("Next Slice [>]");
+
+}
 
 
 
+// ---- cell -----
+
+/*
+
+count_2 = 0;
+sum_2_x = 0;
+
+for (j = 0; j < nResults - 1; j++) {
+	if (meanValues[j] == 2) {
+		// print(meanValues[j] + " " + print(sum_1); + " " + y_values[j]);
+		sum_2_x = sum_2_x + x_values[j];
+		sum_2_y = sum_2_y + y_values[j];
+		count_2++;
+	}
+}
+
+//print(sum_2_x);
+// print(count_2);
+average_x = sum_2_x/count_2;
+average_y = sum_2_y/count_2;
+
+print(average_x + " " + average_y);
+
+// ---- cell -----
+
+
+
+count_3 = 0;
+sum_3_x = 0;
+
+for (j = 0; j < nResults - 1; j++) {
+	if (meanValues[j] == 3) {
+		// print(meanValues[j] + " " + print(sum_1); + " " + y_values[j]);
+		sum_3_x = sum_3_x + x_values[j];
+		sum_3_y = sum_3_y + y_values[j];
+		count_3++;
+	}
+}
+
+// print(sum_3_x);
+
+// print(count_3);
+average_x = sum_3_x/count_3;
+average_y = sum_3_y/count_3;
+
+print(average_x + " " + average_y);
+
+
+// ---- cell -----
+
+
+
+count_4 = 0;
+sum_4_x = 0;
+
+for (j = 0; j < nResults - 1; j++) {
+	if (meanValues[j] == 4) {
+		// print(meanValues[j] + " " + print(sum_1); + " " + y_values[j]);
+		sum_4_x = sum_4_x + x_values[j];
+		sum_4_y = sum_4_y + y_values[j];
+		count_4++;
+	}
+}
+
+//print(sum_4_x);
+
+//print(count_4);
+average_x = sum_4_x/count_4;
+average_y = sum_4_y/count_4;
+
+print(average_x + " " + average_y);
+
+// ---- cell -----
+
+count_5 = 0;
+sum_5_x = 0;
+
+for (j = 0; j < nResults - 1; j++) {
+	if (meanValues[j] == 5) {
+		// print(meanValues[j] + " " + print(sum_1); + " " + y_values[j]);
+		sum_5_x = sum_5_x + x_values[j];
+		sum_5_y = sum_5_y + y_values[j];
+		count_5++;
+	}
+}
+
+//print(sum_5_x);
+
+//print(count_5);
+average_x = sum_5_x/count_5;
+average_y = sum_5_y/count_5;
+
+print(average_x + " " + average_y);
+
+// ---- cell -----
+
+
+
+count_6 = 0;
+sum_6_x = 0;
+
+for (j = 0; j < nResults - 1; j++) {
+	if (meanValues[j] == 6) {
+		// print(meanValues[j] + " " + print(sum_1); + " " + y_values[j]);
+		sum_6_x = sum_6_x + x_values[j];
+		sum_6_y = sum_6_y + y_values[j];
+		count_6++;
+	}
+}
+
+//print(sum_6_x);
+
+//print(count_6);
+average_x = sum_6_x/count_6;
+average_y = sum_6_y/count_6;
+
+print(average_x + " " + average_y);
+
+
+
+// ---- cell -----
+
+
+
+count_6 = 0;
+sum_6_x = 0;
+
+for (j = 0; j < nResults - 1; j++) {
+	if (meanValues[j] == 6) {
+		// print(meanValues[j] + " " + print(sum_1); + " " + y_values[j]);
+		sum_6_x = sum_6_x + x_values[j];
+		sum_6_y = sum_6_y + y_values[j];
+		count_6++;
+	}
+}
+
+//print(sum_6_x);
+
+//print(count_6);
+average_x = sum_6_x/count_6;
+average_y = sum_6_y/count_6;
+
+print(average_x + " " + average_y);
+
+*/
+		
+		// ---------------------------- end track
 
 
 
