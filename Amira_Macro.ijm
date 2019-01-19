@@ -19,11 +19,10 @@ for (i = 0; i <= liste.length - 1; i++) {
 	}
 }
 
-// ------------------------------------
+// ------------------------------------ // ------------------------------------
 
 
 function trackTheCells() {
-
 	// cams = newArray("New camera", "Old camera");
 	Dialog.create("Amira analysis");
 	// Dialog.addRadioButtonGroup("Camera:", cams, 2, 1, cams[0]);
@@ -65,13 +64,14 @@ function trackTheCells() {
 
 	arr_1 = newArray();
 	arr_2 = newArray(); 
+	track();
 	
-	for (i = 0; i < nSlices; i++){
-		// track();
-	}
+	/* for (i = 0; i < nSlices; i++){
+		track();
+	} */
 }
 
-trackTheCells();
+// ------------------------------------ // ------------------------------------
 
 
 function track() {
@@ -84,15 +84,20 @@ function track() {
 		w = height;
 		h = width;
 	}
-
-print(height);
-	
 	for (vertical  = 0; vertical <= h; vertical++) {
 		for (horizontal = 0; horizontal <= w; horizontal++) {
 			if ( Roi.contains(horizontal, vertical)) {
 			makeRectangle(horizontal, vertical, 1, 1);
+			makeRectangle(1, 1, 1, 1);
+			
 			getStatistics(area, mean, min, max, std, histogram);
+			
+			// print(area);
+			
 			Roi.getBounds(x, y, width_Pix, height_Pix);
+			// print(x + " " + y);
+			
+			
 			x_1 = x * pix_size;
 			y_1 = y * pix_size;
 			setResult("Mean", nResults, mean);
@@ -114,36 +119,35 @@ for(i = 0; i < nResults; i++) {
 	x_values[i] = getResult("x_coo", i);
 	y_values[i] = getResult("y_coo", i);
 }
-
 // ---- cell -----
 
 count_1 = 0;
 sum_1_x = 0;
+sum_1_y = 0;
 
-for (j = 0; j < nResults - 1; j++) {
-	if (meanValues[j] == 1) {
-		// print(meanValues[j] + " " + print(sum_1); + " " + y_values[j]);
+for (j = 0; j < nResults - 1; j ++) {
+	mean = 1;
+	if (meanValues[j] == mean) {
+		
 		sum_1_x = sum_1_x + x_values[j];
 		sum_1_y = sum_1_y + y_values[j];
 		count_1++;
+		print(meanValues[j] + " " + sum_1_x + " " + sum_1_y);
 	}
 }
 
-
 //print(sum_1_x);
-
 //print(count_1);
 average_x = sum_1_x/count_1;
 average_y = sum_1_y/count_1;
 area_1 = count_1 * pix_size * pix_size; 
 
-arr_1 = Array.concat(arr_1, mean, average_x, average_y, area_1);
+arr_1 = Array.concat(mean, average_x, average_y, area_1);
 
 Array.print(arr_1);
 
-close("Results");
-run("Next Slice [>]");
-
+// close("Results");
+// run("Next Slice [>]");
 }
 
 
